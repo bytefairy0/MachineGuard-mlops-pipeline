@@ -1,0 +1,710 @@
+{
+    "Normal": [
+        {
+            "antecedents": [
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001250312578144536,
+            "confidence": 1.0,
+            "lift": 83.3125,
+            "representativity": 1.0,
+            "leverage": 0.0012353050753310983,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9892338507761642,
+            "jaccard": 0.10416666666666666,
+            "certainty": 1.0,
+            "kulczynski": 0.5520833333333334
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001250312578144536,
+            "confidence": 1.0,
+            "lift": 83.3125,
+            "representativity": 1.0,
+            "leverage": 0.0012353050753310983,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9892338507761642,
+            "jaccard": 0.10416666666666666,
+            "certainty": 1.0,
+            "kulczynski": 0.5520833333333334
+        },
+        {
+            "antecedents": [
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001250312578144536,
+            "confidence": 1.0,
+            "lift": 83.3125,
+            "representativity": 1.0,
+            "leverage": 0.0012353050753310983,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9892338507761642,
+            "jaccard": 0.10416666666666666,
+            "certainty": 1.0,
+            "kulczynski": 0.5520833333333334
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.012003000750187547,
+            "support": 0.0015003750937734434,
+            "confidence": 0.8571428571428572,
+            "lift": 71.41071428571429,
+            "representativity": 1.0,
+            "leverage": 0.0014793645898346305,
+            "conviction": 6.9159789947486905,
+            "zhangs_metric": 0.9877254509018036,
+            "jaccard": 0.12244897959183675,
+            "certainty": 0.8554073109881767,
+            "kulczynski": 0.4910714285714286
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.012003000750187547,
+            "support": 0.0015003750937734434,
+            "confidence": 0.8571428571428572,
+            "lift": 71.41071428571429,
+            "representativity": 1.0,
+            "leverage": 0.0014793645898346305,
+            "conviction": 6.9159789947486905,
+            "zhangs_metric": 0.9877254509018036,
+            "jaccard": 0.12244897959183675,
+            "certainty": 0.8554073109881767,
+            "kulczynski": 0.4910714285714286
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.012003000750187547,
+            "support": 0.0015003750937734434,
+            "confidence": 0.8571428571428572,
+            "lift": 71.41071428571429,
+            "representativity": 1.0,
+            "leverage": 0.0014793645898346305,
+            "conviction": 6.9159789947486905,
+            "zhangs_metric": 0.9877254509018036,
+            "jaccard": 0.12244897959183675,
+            "certainty": 0.8554073109881767,
+            "kulczynski": 0.4910714285714286
+        },
+        {
+            "antecedents": [
+                "process_temperature_bin_process_temperature_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001000250062515629,
+            "confidence": 0.8000000000000002,
+            "lift": 66.65,
+            "representativity": 1.0,
+            "leverage": 0.0009852425597021912,
+            "conviction": 4.939984996249066,
+            "zhangs_metric": 0.986229344016024,
+            "jaccard": 0.0816326530612245,
+            "certainty": 0.7975702353834474,
+            "kulczynski": 0.44166666666666676
+        },
+        {
+            "antecedents": [
+                "process_temperature_bin_process_temperature_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001000250062515629,
+            "confidence": 0.8000000000000002,
+            "lift": 66.65,
+            "representativity": 1.0,
+            "leverage": 0.0009852425597021912,
+            "conviction": 4.939984996249066,
+            "zhangs_metric": 0.986229344016024,
+            "jaccard": 0.0816326530612245,
+            "certainty": 0.7975702353834474,
+            "kulczynski": 0.44166666666666676
+        },
+        {
+            "antecedents": [
+                "process_temperature_bin_process_temperature_Low",
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.001250312578144536,
+            "consequent support": 0.012003000750187547,
+            "support": 0.001000250062515629,
+            "confidence": 0.8000000000000002,
+            "lift": 66.65,
+            "representativity": 1.0,
+            "leverage": 0.0009852425597021912,
+            "conviction": 4.939984996249066,
+            "zhangs_metric": 0.986229344016024,
+            "jaccard": 0.0816326530612245,
+            "certainty": 0.7975702353834474,
+            "kulczynski": 0.44166666666666676
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.011002750687671918,
+            "support": 0.001250312578144536,
+            "confidence": 0.7142857142857143,
+            "lift": 64.91883116883118,
+            "representativity": 1.0,
+            "leverage": 0.0012310529495339576,
+            "conviction": 3.4614903725931487,
+            "zhangs_metric": 0.9863226452905811,
+            "jaccard": 0.10869565217391304,
+            "certainty": 0.7111070977063392,
+            "kulczynski": 0.413961038961039
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.011002750687671918,
+            "support": 0.001250312578144536,
+            "confidence": 0.7142857142857143,
+            "lift": 64.91883116883118,
+            "representativity": 1.0,
+            "leverage": 0.0012310529495339576,
+            "conviction": 3.4614903725931487,
+            "zhangs_metric": 0.9863226452905811,
+            "jaccard": 0.10869565217391304,
+            "certainty": 0.7111070977063392,
+            "kulczynski": 0.413961038961039
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.011002750687671918,
+            "support": 0.001250312578144536,
+            "confidence": 0.7142857142857143,
+            "lift": 64.91883116883118,
+            "representativity": 1.0,
+            "leverage": 0.0012310529495339576,
+            "conviction": 3.4614903725931487,
+            "zhangs_metric": 0.9863226452905811,
+            "jaccard": 0.10869565217391304,
+            "certainty": 0.7111070977063392,
+            "kulczynski": 0.413961038961039
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "process_temperature_bin_process_temperature_Low"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.006751687921980495,
+            "support": 0.001000250062515629,
+            "confidence": 0.5714285714285715,
+            "lift": 84.63492063492065,
+            "representativity": 1.0,
+            "leverage": 0.0009884316540500467,
+            "conviction": 2.3175793948487127,
+            "zhangs_metric": 0.9899173346693386,
+            "jaccard": 0.13333333333333336,
+            "certainty": 0.5685153215364697,
+            "kulczynski": 0.3597883597883598
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "process_temperature_bin_process_temperature_Low"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.006751687921980495,
+            "support": 0.001000250062515629,
+            "confidence": 0.5714285714285715,
+            "lift": 84.63492063492065,
+            "representativity": 1.0,
+            "leverage": 0.0009884316540500467,
+            "conviction": 2.3175793948487127,
+            "zhangs_metric": 0.9899173346693386,
+            "jaccard": 0.13333333333333336,
+            "certainty": 0.5685153215364697,
+            "kulczynski": 0.3597883597883598
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "process_temperature_bin_process_temperature_Low",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.0017504376094023505,
+            "consequent support": 0.006751687921980495,
+            "support": 0.001000250062515629,
+            "confidence": 0.5714285714285715,
+            "lift": 84.63492063492065,
+            "representativity": 1.0,
+            "leverage": 0.0009884316540500467,
+            "conviction": 2.3175793948487127,
+            "zhangs_metric": 0.9899173346693386,
+            "jaccard": 0.13333333333333336,
+            "certainty": 0.5685153215364697,
+            "kulczynski": 0.3597883597883598
+        }
+    ],
+    "Degraded": [],
+    "Critical": [
+        {
+            "antecedents": [
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.012797542871768621,
+            "support": 0.0015357051446122344,
+            "confidence": 1.0,
+            "lift": 78.14,
+            "representativity": 1.0,
+            "leverage": 0.0015160518921856637,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9887208408100487,
+            "jaccard": 0.11999999999999998,
+            "certainty": 1.0,
+            "kulczynski": 0.5599999999999999
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.012797542871768621,
+            "support": 0.0015357051446122344,
+            "confidence": 1.0,
+            "lift": 78.14,
+            "representativity": 1.0,
+            "leverage": 0.0015160518921856637,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9887208408100487,
+            "jaccard": 0.11999999999999998,
+            "certainty": 1.0,
+            "kulczynski": 0.5599999999999999
+        },
+        {
+            "antecedents": [
+                "rotational_speed_bin_rotational_speed_Low",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.012541592014333249,
+            "support": 0.0015357051446122344,
+            "confidence": 1.0,
+            "lift": 79.73469387755101,
+            "representativity": 1.0,
+            "leverage": 0.0015164449572341952,
+            "conviction": Infinity,
+            "zhangs_metric": 0.9889771853370931,
+            "jaccard": 0.12244897959183672,
+            "certainty": 1.0,
+            "kulczynski": 0.5612244897959183
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.012797542871768621,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 66.97714285714285,
+            "representativity": 1.0,
+            "leverage": 0.0015127763501145686,
+            "conviction": 6.910417199897617,
+            "zhangs_metric": 0.9868376068376068,
+            "jaccard": 0.11764705882352938,
+            "certainty": 0.8552909367013593,
+            "kulczynski": 0.48857142857142855
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.012797542871768621,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 66.97714285714285,
+            "representativity": 1.0,
+            "leverage": 0.0015127763501145686,
+            "conviction": 6.910417199897617,
+            "zhangs_metric": 0.9868376068376068,
+            "jaccard": 0.11764705882352938,
+            "certainty": 0.8552909367013593,
+            "kulczynski": 0.48857142857142855
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.01177373944202713,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 72.80124223602485,
+            "representativity": 1.0,
+            "leverage": 0.0015146106536743818,
+            "conviction": 6.917583823905808,
+            "zhangs_metric": 0.988034188034188,
+            "jaccard": 0.1276595744680851,
+            "certainty": 0.8554408554408554,
+            "kulczynski": 0.4937888198757764
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.012541592014333249,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 68.34402332361515,
+            "representativity": 1.0,
+            "leverage": 0.0015132349260045218,
+            "conviction": 6.912208855899665,
+            "zhangs_metric": 0.987136752136752,
+            "jaccard": 0.11999999999999998,
+            "certainty": 0.8553284455306228,
+            "kulczynski": 0.4897959183673469
+        },
+        {
+            "antecedents": [
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.01177373944202713,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 72.80124223602485,
+            "representativity": 1.0,
+            "leverage": 0.0015146106536743818,
+            "conviction": 6.917583823905808,
+            "zhangs_metric": 0.988034188034188,
+            "jaccard": 0.1276595744680851,
+            "certainty": 0.8554408554408554,
+            "kulczynski": 0.4937888198757764
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Extreme",
+                "pwf"
+            ],
+            "consequents": [
+                "osf",
+                "torque_bin_torque_Extreme",
+                "rotational_speed_bin_rotational_speed_Low"
+            ],
+            "antecedent support": 0.0017916560020476069,
+            "consequent support": 0.01177373944202713,
+            "support": 0.0015357051446122344,
+            "confidence": 0.8571428571428571,
+            "lift": 72.80124223602485,
+            "representativity": 1.0,
+            "leverage": 0.0015146106536743818,
+            "conviction": 6.917583823905808,
+            "zhangs_metric": 0.988034188034188,
+            "jaccard": 0.1276595744680851,
+            "certainty": 0.8554408554408554,
+            "kulczynski": 0.4937888198757764
+        },
+        {
+            "antecedents": [
+                "tool_wear_bin_tool_wear_Normal",
+                "rotational_speed_bin_rotational_speed_Low",
+                "air_temperature_bin_air_temperature_Extreme",
+                "torque_bin_torque_Extreme",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "hdf"
+            ],
+            "antecedent support": 0.001279754287176862,
+            "consequent support": 0.029434348605067828,
+            "support": 0.0010238034297414896,
+            "confidence": 0.7999999999999999,
+            "lift": 27.179130434782607,
+            "representativity": 1.0,
+            "leverage": 0.0009861346959238958,
+            "conviction": 4.852828256974659,
+            "zhangs_metric": 0.9644413121476167,
+            "jaccard": 0.03448275862068965,
+            "certainty": 0.7939345991561182,
+            "kulczynski": 0.41739130434782606
+        },
+        {
+            "antecedents": [
+                "air_temperature_bin_air_temperature_Extreme",
+                "tool_wear_bin_tool_wear_Normal",
+                "rotational_speed_bin_rotational_speed_Low",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "hdf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.029434348605067828,
+            "support": 0.0010238034297414896,
+            "confidence": 0.6666666666666666,
+            "lift": 22.64927536231884,
+            "representativity": 1.0,
+            "leverage": 0.0009786009491603769,
+            "conviction": 2.911696954184796,
+            "zhangs_metric": 0.957318636247116,
+            "jaccard": 0.034188034188034185,
+            "certainty": 0.656557665260197,
+            "kulczynski": 0.3507246376811594
+        },
+        {
+            "antecedents": [
+                "air_temperature_bin_air_temperature_Extreme",
+                "tool_wear_bin_tool_wear_Normal",
+                "torque_bin_torque_Extreme",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "hdf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.029434348605067828,
+            "support": 0.0010238034297414896,
+            "confidence": 0.6666666666666666,
+            "lift": 22.64927536231884,
+            "representativity": 1.0,
+            "leverage": 0.0009786009491603769,
+            "conviction": 2.911696954184796,
+            "zhangs_metric": 0.957318636247116,
+            "jaccard": 0.034188034188034185,
+            "certainty": 0.656557665260197,
+            "kulczynski": 0.3507246376811594
+        },
+        {
+            "antecedents": [
+                "air_temperature_bin_air_temperature_Extreme",
+                "tool_wear_bin_tool_wear_Normal",
+                "rotational_speed_bin_rotational_speed_Low",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "torque_bin_torque_Extreme",
+                "hdf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.024827233171231124,
+            "support": 0.0010238034297414896,
+            "confidence": 0.6666666666666666,
+            "lift": 26.852233676975942,
+            "representativity": 1.0,
+            "leverage": 0.0009856761200339424,
+            "conviction": 2.9255183004863063,
+            "zhangs_metric": 0.9642399384773135,
+            "jaccard": 0.0404040404040404,
+            "certainty": 0.658180227471566,
+            "kulczynski": 0.3539518900343642
+        },
+        {
+            "antecedents": [
+                "air_temperature_bin_air_temperature_Extreme",
+                "tool_wear_bin_tool_wear_Normal",
+                "torque_bin_torque_Extreme",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "rotational_speed_bin_rotational_speed_Low",
+                "hdf"
+            ],
+            "antecedent support": 0.0015357051446122344,
+            "consequent support": 0.029434348605067828,
+            "support": 0.0010238034297414896,
+            "confidence": 0.6666666666666666,
+            "lift": 22.64927536231884,
+            "representativity": 1.0,
+            "leverage": 0.0009786009491603769,
+            "conviction": 2.911696954184796,
+            "zhangs_metric": 0.957318636247116,
+            "jaccard": 0.034188034188034185,
+            "certainty": 0.656557665260197,
+            "kulczynski": 0.3507246376811594
+        },
+        {
+            "antecedents": [
+                "process_temperature_bin_process_temperature_Normal",
+                "rotational_speed_bin_rotational_speed_Low",
+                "air_temperature_bin_air_temperature_Extreme",
+                "torque_bin_torque_Extreme",
+                "tool_wear_bin_tool_wear_Extreme"
+            ],
+            "consequents": [
+                "hdf"
+            ],
+            "antecedent support": 0.0028154594317890964,
+            "consequent support": 0.029434348605067828,
+            "support": 0.0015357051446122344,
+            "confidence": 0.5454545454545454,
+            "lift": 18.531225296442685,
+            "representativity": 1.0,
+            "leverage": 0.001452833930213528,
+            "conviction": 2.1352444330688503,
+            "zhangs_metric": 0.948708076659822,
+            "jaccard": 0.049999999999999996,
+            "certainty": 0.5316695435366321,
+            "kulczynski": 0.29881422924901185
+        },
+        {
+            "antecedents": [
+                "air_temperature_bin_air_temperature_Extreme",
+                "torque_bin_torque_Extreme",
+                "rotational_speed_bin_rotational_speed_Low",
+                "process_temperature_bin_process_temperature_Normal"
+            ],
+            "consequents": [
+                "hdf"
+            ],
+            "antecedent support": 0.007166624008190427,
+            "consequent support": 0.029434348605067828,
+            "support": 0.003839262861530586,
+            "confidence": 0.5357142857142857,
+            "lift": 18.20031055900621,
+            "representativity": 1.0,
+            "leverage": 0.0036283179521520606,
+            "conviction": 2.0904490953121613,
+            "zhangs_metric": 0.9518776316920169,
+            "jaccard": 0.11718749999999997,
+            "certainty": 0.5216338908981315,
+            "kulczynski": 0.3330745341614907
+        }
+    ]
+}
