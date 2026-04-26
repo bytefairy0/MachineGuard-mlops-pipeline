@@ -1,0 +1,287 @@
+[
+  {
+    "id": 1,
+    "failure_type": "TWF",
+    "age_bin": "Young",
+    "recommended_actions": [
+      "Inspect cutting edge geometry under 40x magnification and record wear pattern",
+      "Replace indexable insert with ISO grade P30 carbide tip (part #T1042)",
+      "Recalibrate feed-rate controller to manufacturer spec \u00b10.01 mm/rev",
+      "Log replacement in CMMS and schedule 500-cycle re-inspection"
+    ],
+    "part_codes": [
+      "T1042",
+      "T1043",
+      "LUB-220"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-TWF-001",
+    "estimated_downtime_hours": 1.5
+  },
+  {
+    "id": 2,
+    "failure_type": "TWF",
+    "age_bin": "Mid",
+    "recommended_actions": [
+      "Perform full tool-holder runout check; replace if TIR > 0.005 mm",
+      "Swap worn carbide insert set (P20 grade) and verify torque to 8 Nm",
+      "Flush coolant lines and refill with 8% concentration emulsion",
+      "Re-run break-in cycle at 60% spindle load for 15 minutes"
+    ],
+    "part_codes": [
+      "T2210",
+      "TH-890",
+      "CLT-8PCT"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-TWF-002",
+    "estimated_downtime_hours": 2.0
+  },
+  {
+    "id": 3,
+    "failure_type": "TWF",
+    "age_bin": "Old",
+    "recommended_actions": [
+      "Complete spindle bearing inspection; replace angular-contact pair if Lh < 200 h",
+      "Replace full insert cartridge assembly (part #TC-4401) and anti-vibration shank",
+      "Audit NC program tool-life counters and reset after replacement",
+      "Schedule root-cause analysis meeting within 48 h of unplanned stoppage"
+    ],
+    "part_codes": [
+      "TC-4401",
+      "AVS-12",
+      "BRG-7206"
+    ],
+    "urgency_level": 3,
+    "repair_manual_id": "RM-TWF-003",
+    "estimated_downtime_hours": 4.0
+  },
+  {
+    "id": 4,
+    "failure_type": "HDF",
+    "age_bin": "Young",
+    "recommended_actions": [
+      "Verify coolant flow rate at nozzle: target 12 L/min \u00b10.5 L/min",
+      "Clean heat-exchanger fins with compressed air and degreaser spray",
+      "Check thermal interface paste on drive IGBT module; reapply if dry",
+      "Confirm ambient temperature in enclosure < 40 \u00b0C; add forced ventilation if needed"
+    ],
+    "part_codes": [
+      "HX-FIN-01",
+      "TIM-PAD-3W",
+      "NZL-12L"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-HDF-001",
+    "estimated_downtime_hours": 1.0
+  },
+  {
+    "id": 5,
+    "failure_type": "HDF",
+    "age_bin": "Mid",
+    "recommended_actions": [
+      "Replace coolant pump impeller (part #CP-7700) and inspect seal integrity",
+      "Descale heat-exchanger tubes with 5% citric acid solution; flush 3\u00d7 with DI water",
+      "Re-calibrate over-temperature thermocouple; replace if drift > 2 \u00b0C",
+      "Update thermal alarm setpoint in PLC from 85 \u00b0C to 80 \u00b0C as precaution"
+    ],
+    "part_codes": [
+      "CP-7700",
+      "TC-TYPE-K",
+      "SEAL-V220"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-HDF-002",
+    "estimated_downtime_hours": 3.0
+  },
+  {
+    "id": 6,
+    "failure_type": "HDF",
+    "age_bin": "Old",
+    "recommended_actions": [
+      "Immediate machine stop; allow 30-min cool-down before any contact",
+      "Replace full coolant circuit: pump, reservoir, and all hose assemblies",
+      "Inspect spindle motor winding insulation resistance (target > 100 M\u03a9)",
+      "Submit thermal imaging report to engineering for drive derating review"
+    ],
+    "part_codes": [
+      "CP-7700",
+      "HOSE-KIT-HD",
+      "IR-CAMERA-LOG"
+    ],
+    "urgency_level": 3,
+    "repair_manual_id": "RM-HDF-003",
+    "estimated_downtime_hours": 6.0
+  },
+  {
+    "id": 7,
+    "failure_type": "PWF",
+    "age_bin": "Young",
+    "recommended_actions": [
+      "Measure DC bus voltage under load; acceptable range 560\u2013620 V DC",
+      "Tighten all power terminal lugs to specified torque (12 Nm for M6 terminals)",
+      "Replace AC line filter capacitors if ESR > 0.5 \u03a9 at 100 Hz",
+      "Verify UPS bypass switch position and test auto-transfer within 20 ms"
+    ],
+    "part_codes": [
+      "CAP-450V-470U",
+      "LUG-M6",
+      "UPS-BPS-01"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-PWF-001",
+    "estimated_downtime_hours": 2.0
+  },
+  {
+    "id": 8,
+    "failure_type": "PWF",
+    "age_bin": "Mid",
+    "recommended_actions": [
+      "Replace servo drive IGBT module (part #IGM-1200A) following lockout procedure",
+      "Inspect and clean main contactor contacts; replace if pitting depth > 0.3 mm",
+      "Test regenerative braking resistor value; replace if deviation > 5%",
+      "Check power factor correction bank for blown fuses; replace 32 A type gG"
+    ],
+    "part_codes": [
+      "IGM-1200A",
+      "CTR-LC1D",
+      "RBR-10K-50W"
+    ],
+    "urgency_level": 3,
+    "repair_manual_id": "RM-PWF-002",
+    "estimated_downtime_hours": 4.5
+  },
+  {
+    "id": 9,
+    "failure_type": "PWF",
+    "age_bin": "Old",
+    "recommended_actions": [
+      "Initiate emergency shutdown sequence per SOP-ELEC-07; tag out breaker",
+      "Replace entire servo amplifier rack (part #SAR-6AX) with certified unit",
+      "Commission electrician to perform insulation resistance test on all motor cables",
+      "Schedule full electrical safety audit before return-to-service"
+    ],
+    "part_codes": [
+      "SAR-6AX",
+      "INSUL-KIT",
+      "BREAKER-63A"
+    ],
+    "urgency_level": 3,
+    "repair_manual_id": "RM-PWF-003",
+    "estimated_downtime_hours": 8.0
+  },
+  {
+    "id": 10,
+    "failure_type": "OSF",
+    "age_bin": "Young",
+    "recommended_actions": [
+      "Reduce spindle load by 15%; re-profile NC roughing pass depth of cut",
+      "Inspect drive belt tension; adjust to 180 N \u00b110 N using tension gauge",
+      "Verify workpiece fixture clamping torque matches process sheet \u00b15%",
+      "Run adaptive control cycle to auto-calibrate torque limit parameters"
+    ],
+    "part_codes": [
+      "BELT-B2241",
+      "TEN-GAUGE-01",
+      "CLAMP-KIT-F"
+    ],
+    "urgency_level": 1,
+    "repair_manual_id": "RM-OSF-001",
+    "estimated_downtime_hours": 0.5
+  },
+  {
+    "id": 11,
+    "failure_type": "OSF",
+    "age_bin": "Mid",
+    "recommended_actions": [
+      "Replace motor drive belt (part #BELT-B2241) and realign pulleys to < 0.1 mm TIR",
+      "Inspect motor bearing preload; adjust angular-contact nut to specified axial play",
+      "Check load distribution across all axes; re-balance if delta > 8%",
+      "Verify overload relay trip setting matches nameplate current \u00d71.15"
+    ],
+    "part_codes": [
+      "BELT-B2241",
+      "BRG-6205-2RS",
+      "OLR-A9E"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-OSF-002",
+    "estimated_downtime_hours": 2.5
+  },
+  {
+    "id": 12,
+    "failure_type": "OSF",
+    "age_bin": "Old",
+    "recommended_actions": [
+      "Stop machine immediately; inspect gearbox for tooth fracture under borescope",
+      "Replace motor bearing set (part #BRG-7206-AC) and re-grease with NLGI 2",
+      "Perform vibration spectrum analysis; compare to baseline from commissioning",
+      "Review overload event history in SCADA; escalate if > 3 events in 7 days"
+    ],
+    "part_codes": [
+      "BRG-7206-AC",
+      "GBX-INSPECT-KIT",
+      "VIB-SENSOR-01"
+    ],
+    "urgency_level": 3,
+    "repair_manual_id": "RM-OSF-003",
+    "estimated_downtime_hours": 5.0
+  },
+  {
+    "id": 13,
+    "failure_type": "RNF",
+    "age_bin": "Young",
+    "recommended_actions": [
+      "Perform full diagnostic cycle: check all I/O cards with PLC online monitor",
+      "Review error log for transient fault codes; clear and re-test under load",
+      "Inspect all connector crimps and cable shields for intermittent continuity",
+      "If fault recurs within 24 h, escalate to OEM remote diagnostics session"
+    ],
+    "part_codes": [
+      "DIAG-USB-KEY",
+      "IO-CARD-DI32",
+      "CONN-M12-8P"
+    ],
+    "urgency_level": 1,
+    "repair_manual_id": "RM-RNF-001",
+    "estimated_downtime_hours": 1.0
+  },
+  {
+    "id": 14,
+    "failure_type": "RNF",
+    "age_bin": "Mid",
+    "recommended_actions": [
+      "Capture and export last 1000-line NC program trace for fault reconstruction",
+      "Replace suspect encoder cable assembly (part #ENC-CBL-15M) with shielded type",
+      "Verify EtherCAT ring topology integrity; check for packet loss > 0.001%",
+      "Apply firmware patch v2.4.1 to CNC controller if pending update exists"
+    ],
+    "part_codes": [
+      "ENC-CBL-15M",
+      "ECAT-SWITCH-4P",
+      "FW-PATCH-241"
+    ],
+    "urgency_level": 1,
+    "repair_manual_id": "RM-RNF-002",
+    "estimated_downtime_hours": 2.0
+  },
+  {
+    "id": 15,
+    "failure_type": "RNF",
+    "age_bin": "Old",
+    "recommended_actions": [
+      "Replace CNC controller battery (CR2032); backup SRAM parameters before swap",
+      "Perform full machine geometry check: squareness, parallelism, backlash",
+      "Inspect all relay bases and timer modules for contact oxidation; replace if present",
+      "Schedule comprehensive preventive overhaul within next 30-day window"
+    ],
+    "part_codes": [
+      "BATT-CR2032",
+      "RELAY-MY2N",
+      "GEOM-CHECK-KIT"
+    ],
+    "urgency_level": 2,
+    "repair_manual_id": "RM-RNF-003",
+    "estimated_downtime_hours": 3.5
+  }
+]
