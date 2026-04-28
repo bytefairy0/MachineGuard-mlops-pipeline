@@ -64,17 +64,39 @@ Raw Sensor Data (CSV)
         ↓
 [5] Classification (XGBoost + SVM)
     → Predict failure type (TWF / HDF / PWF / OSF / RNF / No Failure)
-        ↓  [only if failure probability > threshold]
-[6] Regression (XGBoost)
-    → Estimate Remaining Useful Life in operating hours
         ↓
-[7] Recommendation System
-    → Return top 3 repair actions + required spare parts
+[6] Regression (XGBoost)
+    → Predict tool wear accumulation from sensor readings
+    → Urgency level derived from predicted wear value
+        ↓
+[7] Recommendation System (Content-Based Filtering)
+    → Inputs: predicted failure type + machine age bin + predicted tool wear
+    → Output: Top 3 ranked repair actions + part codes + estimated downtime
         ↓
 FastAPI Service → Streamlit Dashboard → MLOps Loop
 ```
 
-The pipeline is **sequential and dependent**. You cannot skip PCA and go straight to clustering. You cannot do regression without classification telling you a failure is coming. This sequential dependency is a design feature, not a limitation.
+The pipeline is **sequential and dependent**. Each stage's output feeds into the next — this sequential dependency is a design feature, not a limitation.
+
+### How the stages connect at inference time
+
+```
+POST /predict  ←  {sensor readings + machine_type + udi}
+       ↓
+  build_features()        # same engineering as training
+       ↓
+  pca.transform()         # project into PC space
+       ↓
+  kmeans.predict()        # assign health regime
+       ↓
+  classifier.predict()    # failure type + probability
+       ↓
+  regressor.predict()     # predicted tool wear value
+       ↓
+  get_recommendations()   # top 3 repair actions
+       ↓
+  return JSON response
+```
 
 ---
 
@@ -285,41 +307,48 @@ Product ID, all *_roll_* and *_lag* (use only if doing pure time-series approach
 
 ---
 
-### 5.5 Regression — Remaining Useful Life
+### 5.5 Regression — Tool Wear Prediction
 
-**What:** Predict how many operating steps remain before the next failure event.
+> ⚠️ **Change from original proposal:** The proposal described RUL regression. We changed this to **tool wear prediction** because `tool_wear` is a continuous, meaningful regression target already present in the data. RUL requires engineering labels from scratch with assumptions. Tool wear prediction is more direct, more honest, and feeds naturally into the recommendation system as an urgency signal.
 
-**Why:** Binary alarm ("failure coming") is useful. A number ("42 hours left") is actionable. The regression module lets maintenance teams schedule repairs without unnecessary emergency shutdowns.
+**What:** Predict the cumulative tool wear value (in minutes) from sensor readings and machine state features.
 
-**RUL label engineering** (since AI4I has no explicit RUL):
-```python
-# Sort by UDI, then for each record compute:
-# RUL = steps until next machine_failure == 1
-df = df.sort_values('udi').reset_index(drop=True)
-df['RUL'] = 0
-failure_indices = df[df['machine_failure']==1].index.tolist()
-
-for i in range(len(df)):
-    future_failures = [f for f in failure_indices if f >= i]
-    if future_failures:
-        df.loc[i, 'RUL'] = future_failures[0] - i
-    else:
-        df.loc[i, 'RUL'] = 0  # or drop these rows
-```
+**Why:** Tool wear is the most measurable proxy for machine health in machining operations. Predicting it lets you schedule tool replacements proactively — before the wear crosses the failure threshold — without waiting for a failure signal. A predicted wear of 187/200 min threshold is a concrete, actionable number.
 
 **Features to use:**
 ```
-air_temperature, process_temperature, rotational_speed, torque, tool_wear,
-type_enc, temp_diff, power_W, wear_rate, torque_speed_ratio,
-tool_wear_roll_mean_5, tool_wear_delta, torque_roll_std_5,
+air_temperature, process_temperature, rotational_speed,
+torque, type_enc, temp_diff, power_W, torque_speed_ratio,
 Health_regime_enc, PC1, PC2
 ```
 
+**Features to EXCLUDE:**
+```
+udi                  ← sequential ID, causes shortcut learning (was top feature at 0.35 importance — wrong)
+tool_wear            ← this IS the target
+wear_rate            ← computed from tool_wear, direct leakage
+tool_wear_roll_*     ← computed from tool_wear, direct leakage
+tool_wear_delta      ← computed from tool_wear, direct leakage
+tool_wear_lag1       ← computed from tool_wear, direct leakage
+machine_failure, twf, hdf, pwf, osf, rnf, failure_mode_count  ← label leakage
+```
+
+> **Why exclude `udi`?** In the first regression attempt, `udi` had 0.35 feature importance — the highest of all features. That's because tool_wear increases sequentially and `udi` is just a row counter. The model was learning "higher row number = more wear" which is trivially true but completely useless at deployment on new machines. Always exclude sequential IDs from regression features.
+
 **Model:** XGBoost Regressor
 
-**Evaluation:** RMSE, MAE, R²
+**Evaluation:** RMSE, MAE, R² — initial result was R²=0.741 with `udi` included. After removing `udi`, expect honest R² around 0.55–0.65.
 
-**Pipeline logic:** This module only runs when the classifier predicts failure probability > 0.3. Don't run it on every record — that wastes computation and makes no logical sense.
+**How tool wear connects to recommendations:**
+```python
+# Urgency thresholds derived from predicted tool wear
+if predicted_wear >= 200:   urgency = "CRITICAL — replace immediately"
+elif predicted_wear >= 150: urgency = "HIGH — schedule within 24hrs"
+elif predicted_wear >= 100: urgency = "MEDIUM — schedule this week"
+else:                       urgency = "LOW — monitor"
+```
+
+**Save as:** `tool_wear_regressor.pkl`
 
 ---
 
@@ -366,18 +395,67 @@ Health_regime_enc, PC1, PC2
 
 ### 5.8 Recommendation System
 
-**What:** Content-based filtering that maps a predicted failure type to a ranked list of repair actions.
+> ⚠️ **Change from original proposal:** The original design used RUL as the urgency input. We now use **predicted tool wear** from the regression stage instead. This is cleaner — wear has a known physical threshold (tool fails around 200–250 min), making urgency levels directly interpretable.
 
-**Why:** Bridges the gap between ML prediction and real-world action. The system doesn't just say "OSF incoming" — it returns: "Replace motor bearing (part #B2241), inspect drive belt tension, check load distribution parameters" with estimated downtime for each.
+**What:** Content-based filtering that maps (predicted failure type + machine age bin + predicted tool wear) → ranked list of repair actions.
 
-**How:**
-1. Build a maintenance knowledge base (JSON file): maps each failure type + machine age bin → repair actions + part codes + urgency + repair manual ID
-2. At inference: construct feature vector from (predicted failure type, machine age bin)
-3. Compute cosine similarity against all knowledge base entries
-4. Return top 3 matched recommendations ranked by relevance score
-5. Include RUL estimate from regression stage to add urgency context
+**Why:** Bridges the gap between prediction and action. The system doesn't just say "OSF incoming" — it returns specific repair steps, part codes, estimated downtime, and repair manual references. This is the prescriptive analytics layer.
 
-**Output:** Included in the `/predict` API response alongside failure type and RUL value.
+**Inputs at inference time:**
+```
+failure_type      ← from classifier (TWF / HDF / PWF / OSF / RNF)
+age_bin           ← derived from udi (Young: 0-1000, Mid: 1000-5000, Old: 5000+)
+predicted_wear    ← from regressor (continuous value in minutes)
+```
+
+**Knowledge base structure (15 entries = 5 failure types × 3 age bins):**
+```json
+{
+  "failure_type": "OSF",
+  "age_bin": "Old",
+  "wear_level": "HIGH",
+  "recommended_actions": [
+    "Stop machine immediately; inspect gearbox for tooth fracture",
+    "Replace motor bearing set (part #BRG-7206-AC)",
+    "Perform vibration spectrum analysis"
+  ],
+  "part_codes": ["BRG-7206-AC", "GBX-INSPECT-KIT"],
+  "urgency_level": 3,
+  "estimated_downtime_hours": 5.0,
+  "repair_manual_id": "RM-OSF-003"
+}
+```
+
+**How cosine similarity works here:**
+1. Encode `failure_type` and `age_bin` as one-hot vectors → combined feature vector
+2. Compute cosine similarity between query vector and all 15 KB entries
+3. **Hard filter by `failure_type` first** — never recommend RNF actions for an OSF prediction
+4. Return top 3 ranked by similarity score
+
+> ⚠️ **Known bug to fix:** Without the hard filter, cosine similarity can return entries from a different failure type if the age_bin + urgency dimensions are similar. Rank #3 in testing returned RNF actions for an OSF query. Always filter by `failure_type` before ranking.
+
+**RUL urgency override logic:**
+```python
+# If predicted wear is critically high, bump urgency regardless of KB entry
+def get_wear_level(predicted_wear):
+    if predicted_wear >= 200:   return "CRITICAL"
+    elif predicted_wear >= 150: return "HIGH"
+    elif predicted_wear >= 100: return "MEDIUM"
+    else:                       return "LOW"
+```
+
+**Edge cases handled (already tested):**
+- No failure predicted → return `{"message": "Machine is healthy", "predicted_wear": X}`
+- Invalid `failure_type` → raise `ValueError` with valid options listed
+- Invalid `age_bin` → raise `ValueError` with valid options listed
+- High predicted wear → urgency override applied automatically
+
+**Function signature:**
+```python
+def get_recommendations(failure_type: str, age_bin: str, predicted_wear: float) -> list[dict]
+```
+
+**Evaluation metrics:** Precision@3, Coverage (% of failure type × age bin combos with at least one valid recommendation)
 
 ---
 
@@ -396,27 +474,34 @@ Notebooks (run in this order):
 
 3. time_series.ipynb
    Input  → data_clustered.csv
-   Output → visualisations + confirms rolling features are useful
+   Output → visualisations showing rolling features capture pre-failure patterns
 
 4. association_rules.ipynb
    Input  → data_clustered.csv
-   Output → rules.json                  (fault pattern library)
+   Output → rules.json                  (fault pattern library per health regime)
 
 5. classification.ipynb
    Input  → data_clustered.csv + rules.json
-   Output → xgboost_classifier.pkl, svm_classifier.pkl
+   Output → xgb_classifier.pkl, svm_classifier.pkl
 
 6. regression.ipynb
-   Input  → data_clustered.csv + classifier output
-   Output → xgboost_regressor.pkl
+   Input  → data_clustered.csv
+   Target → tool_wear  (direct column, no engineering needed)
+   Output → tool_wear_regressor.pkl
+   NOTE   → exclude udi, wear_rate, all tool_wear_* derived columns
 
 7. recommendation.ipynb
-   Input  → knowledge_base.json + classifier + regressor output
-   Output → recommendation engine
+   Input  → knowledge_base.json (15 entries: 5 failure types × 3 age bins)
+           + classifier output (failure_type)
+           + regressor output  (predicted_wear → urgency level)
+   Output → MaintenanceRecommender class → recommendations.py
+   NOTE   → hard filter by failure_type BEFORE cosine similarity ranking
 
-8. api/ (FastAPI app)
-   Loads all .pkl files + rules.json + knowledge_base.json
-   Serves /predict, /health, /feedback, /metrics endpoints
+8. api/main.py (FastAPI)
+   Loads → xgb_classifier.pkl, svm_classifier.pkl,
+            tool_wear_regressor.pkl, pca.pkl, kmeans.pkl,
+            knowledge_base.json, rules.json
+   Serves → /predict, /health, /feedback, /metrics
 ──────────────────────────────────────────────────────
 ```
 
