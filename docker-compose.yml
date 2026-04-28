@@ -1,0 +1,26 @@
+services:
+  fastapi:
+    build: .
+    container_name: machineguard-api
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./:/app
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  prefect:
+    build: .
+    container_name: machineguard-prefect
+    command: python main_pipeline.py
+    volumes:
+      - ./:/app
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - fastapi

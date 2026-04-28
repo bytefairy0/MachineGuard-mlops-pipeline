@@ -6,8 +6,5 @@ pandas
 scikit-learn
 xgboost==1.7.6
 joblib
-httpx        # for testing
-pytest
 prefect>=2.19.0
-deepchecks>=0.18.0
 papermill>=2.6.0

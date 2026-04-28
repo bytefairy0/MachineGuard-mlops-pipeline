@@ -3,7 +3,7 @@ MachineGuard+ FastAPI Service
 Endpoints: /predict, /health, /feedback, /metrics
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Tuple
@@ -13,6 +13,7 @@ import joblib
 import json
 import os
 import logging
+from io import BytesIO
 from datetime import datetime
 from collections import deque
 import uvicorn
@@ -50,16 +51,17 @@ MODELS: Dict[str, Any] = {}
 def load_models():
     """Load all saved model artefacts. Gracefully skip if not found (dev mode)."""
     artefacts = {
-        "pca":        "models/pca.pkl",
-        "kmeans":     "models/kmeans.pkl",
-        "xgb_clf":    "models/xgb_classifier.pkl",
-        "svm_clf":    "models/svm_classifier.pkl",
-        "xgb_reg":    "models/xgb_regressor.pkl",
-        "scaler":     "models/scaler.pkl",
-        "rules":      "models/association_rules.json",
+        "pca": ["models/pca.pkl"],
+        "kmeans": ["models/kmeans.pkl"],
+        "xgb_clf": ["models/xgb_classifier.pkl"],
+        "svm_clf": ["models/svm_classifier.pkl", "models/svm_pipeline.pkl"],
+        "xgb_reg": ["models/xgb_regressor.pkl", "models/tool_wear_regressor.pkl"],
+        "scaler": ["models/scaler.pkl"],
+        "rules": ["models/rules.json", "models/association_rules.json"],
     }
-    for name, path in artefacts.items():
-        if os.path.exists(path):
+    for name, candidates in artefacts.items():
+        path = next((p for p in candidates if os.path.exists(p)), None)
+        if path:
             if path.endswith(".json"):
                 with open(path) as f:
                     MODELS[name] = json.load(f)
@@ -67,7 +69,7 @@ def load_models():
                 MODELS[name] = joblib.load(path)
             logger.info(f"Loaded artefact: {name}")
         else:
-            logger.warning(f"Artefact not found (dev mode): {path}")
+            logger.warning(f"Artefact not found (dev mode): {candidates}")
 
 load_models()
 
@@ -75,14 +77,14 @@ load_models()
 
 class SensorInput(BaseModel):
     """Raw sensor reading from one machine at one time step."""
-    machine_id: str = Field(..., example="M001")
-    machine_type: str = Field(..., example="L")          # L / M / H
-    air_temperature: float = Field(..., example=298.1)   # Kelvin
-    process_temperature: float = Field(..., example=308.6)
-    rotational_speed: int   = Field(..., example=1551)   # rpm
-    torque: float           = Field(..., example=42.8)   # Nm
-    tool_wear: int          = Field(..., example=108)    # minutes
-    machine_age_bin: Optional[str] = Field("Medium", example="High")  # Low/Medium/High
+    machine_id: str = Field(...)
+    machine_type: str = Field(...)  # L / M / H
+    air_temperature: float = Field(...)  # Kelvin
+    process_temperature: float = Field(...)
+    rotational_speed: int = Field(...)  # rpm
+    torque: float = Field(...)  # Nm
+    tool_wear: int = Field(...)  # minutes
+    machine_age_bin: Optional[str] = Field("Medium")  # Low/Medium/High
 
 class PredictionResponse(BaseModel):
     machine_id: str
@@ -111,6 +113,13 @@ class MetricsResponse(BaseModel):
     health_regime_distribution: Dict[str, int]
     avg_failure_probability: float
     drift_alert: bool
+
+
+class TaskPredictionResponse(BaseModel):
+    machine_id: str
+    timestamp: str
+    prediction: Dict[str, Any]
+    model_version: str
 
 # ── Feature engineering helpers ───────────────────────────────────────────────
 
@@ -149,7 +158,17 @@ def apply_pca(features: np.ndarray) -> np.ndarray:
     """Apply scaler + PCA on the raw 5 sensor columns."""
     pca_input = features[:, :5]
     if "scaler" in MODELS:
-        pca_input = MODELS["scaler"].transform(pca_input)
+        pca_df = pd.DataFrame(
+            pca_input,
+            columns=[
+                "air_temperature",
+                "process_temperature",
+                "rotational_speed",
+                "torque",
+                "tool_wear",
+            ],
+        )
+        pca_input = MODELS["scaler"].transform(pca_df)
     if "pca" in MODELS:
         return MODELS["pca"].transform(pca_input)
     return pca_input
@@ -159,9 +178,65 @@ def assign_cluster(pca_features: np.ndarray) -> tuple:
     """Return (cluster_id, health_regime_label)."""
     if "kmeans" not in MODELS:
         return 0, "Unknown"
-    cluster = int(MODELS["kmeans"].predict(pca_features)[0])
+    kmeans = MODELS["kmeans"]
+    expected = getattr(kmeans, "n_features_in_", pca_features.shape[1])
+    if pca_features.shape[1] > expected:
+        pca_for_cluster = pca_features[:, :expected]
+    elif pca_features.shape[1] < expected:
+        pad = np.zeros((pca_features.shape[0], expected - pca_features.shape[1]))
+        pca_for_cluster = np.hstack([pca_features, pad])
+    else:
+        pca_for_cluster = pca_features
+    cluster = int(kmeans.predict(pca_for_cluster)[0])
     regime_map = {0: "Normal", 1: "Degraded", 2: "Critical"}
     return cluster, regime_map.get(cluster, f"Cluster-{cluster}")
+
+
+def _build_model_feature_frame(features: np.ndarray, cluster: int, pca_features: np.ndarray) -> pd.DataFrame:
+    base = {
+        "air_temperature": float(features[0, 0]),
+        "process_temperature": float(features[0, 1]),
+        "rotational_speed": float(features[0, 2]),
+        "torque": float(features[0, 3]),
+        "tool_wear": float(features[0, 4]),
+        "type_enc": float(features[0, 5]),
+        "temp_diff": float(features[0, 6]),
+        "power_w": float(features[0, 7]),
+        "wear_rate": float(features[0, 8]),
+        "torque_speed_ratio": float(features[0, 9]),
+        "high_wear_flag": float(features[0, 10]),
+        "thermal_overload": float(features[0, 11]),
+        "health_regime_enc": float(cluster),
+    }
+    for idx in range(pca_features.shape[1]):
+        base[f"pc{idx + 1}"] = float(pca_features[0, idx])
+    return pd.DataFrame([base])
+
+
+def _safe_classifier_proba(model: Any, model_input: pd.DataFrame) -> np.ndarray:
+    """Return classifier probabilities with legacy XGBoost compatibility."""
+    # Prefer booster path for old pickled wrappers that fail get_params().
+    if hasattr(model, "get_booster"):
+        import xgboost as xgb
+
+        booster = model.get_booster()
+        dmat = xgb.DMatrix(model_input.to_numpy(), feature_names=list(model_input.columns))
+        preds = booster.predict(dmat)
+        if preds.ndim == 1:
+            preds = np.column_stack([1.0 - preds, preds])
+        return preds
+    return model.predict_proba(model_input)
+
+
+def _safe_regressor_predict(model: Any, model_input: pd.DataFrame) -> np.ndarray:
+    """Return regressor predictions with legacy XGBoost compatibility."""
+    if hasattr(model, "get_booster"):
+        import xgboost as xgb
+
+        booster = model.get_booster()
+        dmat = xgb.DMatrix(model_input.to_numpy(), feature_names=list(model_input.columns))
+        return booster.predict(dmat)
+    return model.predict(model_input)
 
 
 def predict_failure(features: np.ndarray, cluster: int, pca_features: np.ndarray) -> tuple:
@@ -172,8 +247,12 @@ def predict_failure(features: np.ndarray, cluster: int, pca_features: np.ndarray
         ftype = "No Failure" if prob < FAILURE_THRESHOLD else "HDF"
         return float(prob), ftype
 
-    feat_with_cluster = np.hstack([features, [[cluster]], pca_features])
-    proba = MODELS["xgb_clf"].predict_proba(feat_with_cluster)[0]
+    model = MODELS["xgb_clf"]
+    feat_df = _build_model_feature_frame(features, cluster, pca_features)
+    expected_cols = getattr(model, "feature_names_in_", None)
+    if expected_cols is not None:
+        feat_df = feat_df.reindex(columns=list(expected_cols), fill_value=0.0)
+    proba = _safe_classifier_proba(model, feat_df)[0]
     pred_class = int(np.argmax(proba))
     fail_prob = float(1 - proba[0]) if len(proba) > 1 else float(proba[0])
     return fail_prob, FAILURE_LABELS.get(pred_class, "Unknown")
@@ -188,7 +267,21 @@ def estimate_tool_wear(features: np.ndarray, fail_prob: float) -> Optional[float
         wear_delta = features[0, 6] * 2.0 + features[0, 9] * 2500.0
         pred = max(0.0, min(300.0, features[0, 4] + wear_delta))
         return round(float(pred), 1)
-    pred_wear = float(MODELS["xgb_reg"].predict(features)[0])
+    reg_model = MODELS["xgb_reg"]
+    reg_frame = pd.DataFrame([{
+        "air_temperature": float(features[0, 0]),
+        "process_temperature": float(features[0, 1]),
+        "rotational_speed": float(features[0, 2]),
+        "torque": float(features[0, 3]),
+        "type_enc": float(features[0, 5]),
+        "temp_diff": float(features[0, 6]),
+        "power_w": float(features[0, 7]),
+        "torque_speed_ratio": float(features[0, 9]),
+    }])
+    expected_cols = getattr(reg_model, "feature_names_in_", None)
+    if expected_cols is not None:
+        reg_frame = reg_frame.reindex(columns=list(expected_cols), fill_value=0.0)
+    pred_wear = float(_safe_regressor_predict(reg_model, reg_frame)[0])
     return round(max(0.0, pred_wear), 1)
 
 
@@ -209,10 +302,22 @@ def match_rules(cluster: int, failure_type: str) -> List[str]:
     """Return association rules that match this cluster + failure type."""
     if "rules" not in MODELS:
         return []
-    rules = MODELS["rules"]
+    rules_obj = MODELS["rules"]
+    if isinstance(rules_obj, dict):
+        rules: List[Dict[str, Any]] = []
+        for value in rules_obj.values():
+            if isinstance(value, list):
+                rules.extend([r for r in value if isinstance(r, dict)])
+    elif isinstance(rules_obj, list):
+        rules = [r for r in rules_obj if isinstance(r, dict)]
+    else:
+        return []
     matched = []
     for rule in rules:
-        if rule.get("cluster") == cluster and failure_type in rule.get("consequents", []):
+        consequents = rule.get("consequents", [])
+        if isinstance(consequents, str):
+            consequents = [consequents]
+        if rule.get("cluster") == cluster and failure_type in consequents:
             matched.append(rule.get("description", str(rule)))
     return matched[:3]   # top 3
 
@@ -235,6 +340,31 @@ def get_recommendations(failure_type: str, age_bin: str) -> Optional[List[Dict]]
     results.sort(key=lambda x: x["relevance_score"], reverse=True)
     return results[:3] if results else None
 
+
+def _predict_core(sensor: SensorInput) -> Tuple[float, str, str, Optional[float], Optional[str], List[str], Optional[List[Dict]]]:
+    features = engineer_features(sensor)
+    pca_features = apply_pca(features)
+    cluster, health_regime = assign_cluster(pca_features)
+    fail_prob, failure_type = predict_failure(features, cluster, pca_features)
+    predicted_tool_wear = estimate_tool_wear(features, fail_prob)
+    urgency_level = get_urgency_level(predicted_tool_wear)
+    triggered_rules = match_rules(cluster, failure_type)
+    recs = get_recommendations(failure_type, sensor.machine_age_bin or "Medium")
+    if recs and predicted_tool_wear is not None:
+        for rec in recs:
+            if isinstance(rec, dict):
+                rec["predicted_tool_wear"] = predicted_tool_wear
+                rec["urgency_level"] = urgency_level
+    return (
+        fail_prob,
+        failure_type,
+        health_regime,
+        predicted_tool_wear,
+        urgency_level,
+        triggered_rules,
+        recs,
+    )
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get("/")
@@ -250,32 +380,15 @@ def predict(sensor: SensorInput, background_tasks: BackgroundTasks):
     """
     ts = datetime.utcnow().isoformat()
     try:
-        # 1. Feature engineering
-        features = engineer_features(sensor)
-
-        # 2. PCA
-        pca_features = apply_pca(features)
-
-        # 3. Clustering → health regime
-        cluster, health_regime = assign_cluster(pca_features)
-
-        # 4. Classification → failure type + probability
-        fail_prob, failure_type = predict_failure(features, cluster, pca_features)
-
-        # 5. Regression (conditional)
-        predicted_tool_wear = estimate_tool_wear(features, fail_prob)
-        urgency_level = get_urgency_level(predicted_tool_wear)
-
-        # 6. Association rules
-        triggered_rules = match_rules(cluster, failure_type)
-
-        # 7. Recommendations (if rec system available)
-        recs = get_recommendations(failure_type, sensor.machine_age_bin or "Medium")
-        if recs and predicted_tool_wear is not None:
-            for rec in recs:
-                if isinstance(rec, dict):
-                    rec["predicted_tool_wear"] = predicted_tool_wear
-                    rec["urgency_level"] = urgency_level
+        (
+            fail_prob,
+            failure_type,
+            health_regime,
+            predicted_tool_wear,
+            urgency_level,
+            triggered_rules,
+            recs,
+        ) = _predict_core(sensor)
 
         response = PredictionResponse(
             machine_id=sensor.machine_id,
@@ -308,6 +421,95 @@ def predict(sensor: SensorInput, background_tasks: BackgroundTasks):
     except Exception as e:
         logger.exception("Prediction error")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/classification", response_model=TaskPredictionResponse)
+def predict_classification(sensor: SensorInput):
+    ts = datetime.utcnow().isoformat()
+    fail_prob, failure_type, health_regime, _, _, _, _ = _predict_core(sensor)
+    return TaskPredictionResponse(
+        machine_id=sensor.machine_id,
+        timestamp=ts,
+        prediction={
+            "failure_probability": round(fail_prob, 4),
+            "failure_type": failure_type,
+            "health_regime": health_regime,
+        },
+        model_version=MODEL_VERSION,
+    )
+
+
+@app.post("/predict/regression", response_model=TaskPredictionResponse)
+def predict_regression(sensor: SensorInput):
+    ts = datetime.utcnow().isoformat()
+    fail_prob, _, _, predicted_tool_wear, urgency_level, _, _ = _predict_core(sensor)
+    return TaskPredictionResponse(
+        machine_id=sensor.machine_id,
+        timestamp=ts,
+        prediction={
+            "failure_probability": round(fail_prob, 4),
+            "predicted_tool_wear": predicted_tool_wear,
+            "urgency_level": urgency_level,
+        },
+        model_version=MODEL_VERSION,
+    )
+
+
+@app.post("/predict/timeseries", response_model=TaskPredictionResponse)
+async def predict_timeseries(file: UploadFile = File(...)):
+    ts = datetime.utcnow().isoformat()
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files are supported.")
+    try:
+        content = await file.read()
+        df = pd.read_csv(BytesIO(content))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid CSV input: {exc}") from exc
+
+    required = [
+        "machine_id",
+        "machine_type",
+        "air_temperature",
+        "process_temperature",
+        "rotational_speed",
+        "torque",
+        "tool_wear",
+    ]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Missing required columns: {missing}")
+    if df.empty:
+        raise HTTPException(status_code=400, detail="CSV has no rows.")
+
+    last = df.iloc[-1]
+    sensor = SensorInput(
+        machine_id=str(last["machine_id"]),
+        machine_type=str(last["machine_type"]),
+        air_temperature=float(last["air_temperature"]),
+        process_temperature=float(last["process_temperature"]),
+        rotational_speed=int(last["rotational_speed"]),
+        torque=float(last["torque"]),
+        tool_wear=int(last["tool_wear"]),
+        machine_age_bin=str(last["machine_age_bin"]) if "machine_age_bin" in df.columns else "Mid",
+    )
+    fail_prob, failure_type, _, predicted_tool_wear, urgency_level, _, _ = _predict_core(sensor)
+    trend = None
+    if len(df) >= 2 and "tool_wear" in df.columns:
+        trend = float(df["tool_wear"].iloc[-1] - df["tool_wear"].iloc[0])
+
+    return TaskPredictionResponse(
+        machine_id=sensor.machine_id,
+        timestamp=ts,
+        prediction={
+            "rows_processed": int(len(df)),
+            "failure_probability": round(fail_prob, 4),
+            "failure_type": failure_type,
+            "predicted_tool_wear": predicted_tool_wear,
+            "urgency_level": urgency_level,
+            "tool_wear_trend": trend,
+        },
+        model_version=MODEL_VERSION,
+    )
 
 
 def log_prediction(sensor, failure_type, fail_prob, health_regime):

@@ -49,3 +49,39 @@ def test_metrics_endpoint_updates_after_prediction():
     body = metrics.json()
     assert body["total_predictions"] >= 1
     assert "avg_failure_probability" in body
+
+
+def test_predict_classification_endpoint():
+    client = TestClient(main.app)
+    resp = client.post("/predict/classification", json=_payload())
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "prediction" in body
+    assert "failure_probability" in body["prediction"]
+    assert "failure_type" in body["prediction"]
+
+
+def test_predict_regression_endpoint():
+    client = TestClient(main.app)
+    resp = client.post("/predict/regression", json=_payload())
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "prediction" in body
+    assert "predicted_tool_wear" in body["prediction"]
+
+
+def test_predict_timeseries_csv_upload():
+    client = TestClient(main.app)
+    csv_payload = (
+        "machine_id,machine_type,air_temperature,process_temperature,rotational_speed,torque,tool_wear,machine_age_bin\n"
+        "M001,L,298.1,308.6,1551,42.8,108,Mid\n"
+        "M001,L,298.4,309.0,1549,43.1,111,Mid\n"
+    )
+    resp = client.post(
+        "/predict/timeseries",
+        files={"file": ("series.csv", csv_payload, "text/csv")},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "prediction" in body
+    assert body["prediction"]["rows_processed"] == 2

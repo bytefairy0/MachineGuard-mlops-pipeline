@@ -1,0 +1,40 @@
+{
+  "run_at_utc": "2026-04-28T22:21:40.178615+00:00",
+  "metrics": {
+    "tasks": {
+      "classification": {
+        "baseline": {
+          "accuracy": 0.966,
+          "f1": 0.491353001017294
+        },
+        "improved": {
+          "accuracy": 0.9605,
+          "f1": 0.1937070754451071
+        }
+      },
+      "regression": {
+        "baseline": {
+          "rmse": 65.34267538571174
+        },
+        "improved": {
+          "rmse": 65.34267538571174
+        }
+      },
+      "clustering": {
+        "silhouette_score": 0.3815255617474628
+      },
+      "time_series": {
+        "forecast_rmse_proxy": 18.322177114120777
+      },
+      "association": {
+        "rule_count": 31,
+        "avg_confidence": 0.7909440022343251,
+        "avg_lift": 62.200269482131894
+      },
+      "recommendation": {
+        "entries": 15,
+        "coverage_pairs": 15
+      }
+    }
+  }
+}
