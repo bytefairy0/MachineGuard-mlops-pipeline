@@ -1,13 +1,30 @@
+# Runtime API stack
 fastapi==0.111.0
-uvicorn[standard]>=0.30.0
-pydantic>=2.10.1
-numpy<2
+uvicorn[standard]==0.30.6
+pydantic==2.10.6
+
+# ML stack pinned for GitHub Actions compatibility
+numpy==1.26.4
+pandas==2.1.4
+scipy==1.11.4
 scikit-learn==1.3.2
-deepchecks==0.18.0
-pandas>=1.5.0
 xgboost==1.7.6
-joblib
-httpx        # for testing
-pytest
-prefect>=2.19.0
-papermill>=2.6.0
+joblib==1.3.2
+
+# MLOps / validation stack
+deepchecks==0.18.0
+prefect==2.20.9
+papermill==2.6.0
+
+# Notebook/headless CI dependencies used by DeepChecks/Papermill
+ipython==8.12.3
+ipykernel==6.29.5
+nbformat==5.10.4
+nbconvert==7.16.4
+jupyter-client==8.6.2
+jupyter-core==5.7.2
+traitlets==5.14.3
+
+# Testing
+httpx==0.27.2
+pytest==8.3.4
