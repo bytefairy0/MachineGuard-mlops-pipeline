@@ -3,11 +3,11 @@ uvicorn[standard]>=0.30.0
 pydantic>=2.10.1
 numpy<2
 pandas
-scikit-learn
+scikit-learn>=1.5.0
+deepchecks>=0.18.1
 xgboost==1.7.6
 joblib
 httpx        # for testing
 pytest
 prefect>=2.19.0
-deepchecks>=0.18.0
 papermill>=2.6.0
