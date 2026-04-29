@@ -22,5 +22,6 @@ services:
       - ./outputs:/app/outputs
     environment:
       - PYTHONUNBUFFERED=1
+      - PREFECT_API_DATABASE_CONNECTION_TIMEOUT=60
     depends_on:
       - fastapi
