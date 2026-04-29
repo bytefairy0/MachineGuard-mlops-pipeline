@@ -18,6 +18,10 @@ from datetime import datetime
 from collections import deque
 import uvicorn
 
+from fastapi.middleware.cors import CORSMiddleware
+
+
+
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger("machineguard")
@@ -27,6 +31,16 @@ app = FastAPI(
     title="MachineGuard+",
     description="Adaptive Predictive Maintenance Intelligence System",
     version="1.0.0",
+)
+
+# ... after you define: app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # This allows all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],  # This allows POST, GET, etc.
+    allow_headers=["*"],
 )
 
 app.add_middleware(
