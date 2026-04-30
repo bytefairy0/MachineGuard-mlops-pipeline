@@ -119,6 +119,14 @@ def _safe_regressor_predict(model: Any, features: pd.DataFrame) -> np.ndarray:
         raise
 
 
+def _first_existing_model(candidates: List[str]) -> Optional[Path]:
+    for name in candidates:
+        path = MODELS_DIR / name
+        if path.exists():
+            return path
+    return None
+
+
 def _load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -160,13 +168,18 @@ def run_notebook(notebook_name: str) -> str:
 
 @task(retries=2, retry_delay_seconds=2)
 def validate_expected_outputs() -> Dict[str, bool]:
+    classifier_path = _first_existing_model(
+        ["xgb_classifier.pkl", "xgb_isFailure.pkl", "svm_classifier.pkl", "svm_isFailure.pkl"]
+    )
+    regressor_path = _first_existing_model(["xgb_regressor.pkl", "tool_wear_regressor.pkl"])
     checks = {
         "eda_data_exists": (DATA_DIR / "eda_data.csv").exists(),
         "clustered_data_exists": (DATA_DIR / "clustered_data.csv").exists(),
         "pca_exists": (MODELS_DIR / "pca.pkl").exists(),
         "kmeans_exists": (MODELS_DIR / "kmeans.pkl").exists(),
         "scaler_exists": (MODELS_DIR / "scaler.pkl").exists(),
-        "xgb_classifier_exists": (MODELS_DIR / "xgb_classifier.pkl").exists(),
+        "classifier_exists": classifier_path is not None,
+        "regressor_exists": regressor_path is not None,
         "rules_exists": (MODELS_DIR / "rules.json").exists(),
         "knowledge_base_exists": (MODELS_DIR / "knowledge_base.json").exists(),
     }
@@ -206,8 +219,10 @@ def evaluate_multi_task_metrics() -> Dict[str, Any]:
         "f1": float(f1_score(y_test_c, y_pred_base, average="macro", zero_division=0)),
     }
     improved_class = dict(baseline_class)
-    clf_path = MODELS_DIR / "xgb_classifier.pkl"
-    if clf_path.exists():
+    clf_path = _first_existing_model(
+        ["xgb_classifier.pkl", "xgb_isFailure.pkl", "svm_classifier.pkl", "svm_isFailure.pkl"]
+    )
+    if clf_path is not None:
         clf = joblib.load(clf_path)
         X_aligned = _align_to_model_features(X_test_c, clf)
         y_pred = _safe_classifier_predict(clf, X_aligned)
@@ -231,8 +246,8 @@ def evaluate_multi_task_metrics() -> Dict[str, Any]:
     y_pred_base_r = baseline_reg.predict(X_test_r)
     baseline_rmse = float(np.sqrt(mean_squared_error(y_test_r, y_pred_base_r)))
     improved_rmse = baseline_rmse
-    reg_path = MODELS_DIR / "xgb_regressor.pkl"
-    if reg_path.exists():
+    reg_path = _first_existing_model(["xgb_regressor.pkl", "tool_wear_regressor.pkl"])
+    if reg_path is not None:
         reg_model = joblib.load(reg_path)
         X_reg_aligned = _align_to_model_features(X_test_r, reg_model)
         y_pred_r = _safe_regressor_predict(reg_model, X_reg_aligned)

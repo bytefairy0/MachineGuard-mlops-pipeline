@@ -79,35 +79,38 @@ def _load_xgboost_model(name: str, path: str) -> Any:
     return model
 
 
+
 def load_models():
-    """Load all saved model artefacts. Gracefully skip if not found (dev mode)."""
+    """Load all saved model artefacts using .pkl files."""
+    # Updated paths to point to .pkl versions
     artefacts = {
         "pca": ["models/pca.pkl"],
         "kmeans": ["models/kmeans.pkl"],
-        "xgb_clf": ["models/xgb_classifier.json"],
-        "xgb_is_failure": ["models/xgb_isFailure.json"],
-        "xgb_failure_types": ["models/xgb_failureTypes.json"],
-        "xgb_reg": ["models/xgb_regressor.json"],
+        "xgb_clf": ["models/xgb_classifier.pkl"],
+        "xgb_is_failure": ["models/xgb_isFailure.pkl"],
+        "xgb_failure_types": ["models/xgb_failureTypes.pkl"],
+        "xgb_reg": ["models/xgb_regressor.pkl"],
         "scaler": ["models/scaler.pkl"],
-        "rules": ["models/rules.json", "models/association_rules.json"],
+        "rules": ["models/rules.json", "models/association_rules.json"], # Kept json for rules
     }
+    
     for name, candidates in artefacts.items():
         path = next((p for p in candidates if os.path.exists(p)), None)
         if path:
             try:
-                if path.endswith(".json") and name.startswith("xgb_"):
-                    MODELS[name] = _load_xgboost_model(name, path)
-                elif path.endswith(".json"):
+                # Rules are typically standard JSON, models are now PKL
+                if path.endswith(".json"):
                     with open(path) as f:
                         MODELS[name] = json.load(f)
                 else:
+                    # Using joblib to load the pickled XGBoost objects
                     MODELS[name] = joblib.load(path)
-                logger.info(f"Loaded artefact: {name}")
+                logger.info(f"Loaded pkl artefact: {name}")
             except Exception as exc:
                 MODEL_LOAD_ERRORS[name] = f"{path}: {exc}"
                 logger.exception(f"Failed to load artefact: {name} from {path}")
         else:
-            logger.warning(f"Artefact not found (dev mode): {candidates}")
+            logger.warning(f"Artefact not found: {candidates}")
 
 load_models()
 
