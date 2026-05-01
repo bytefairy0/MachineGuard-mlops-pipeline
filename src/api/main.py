@@ -231,7 +231,7 @@ def predict(sensor: SensorInput, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
-def health():
+def health_check():
     return {"status": "online", "models": list(MODELS.keys())}
 
 if __name__ == "__main__":
