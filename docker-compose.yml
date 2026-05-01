@@ -2,6 +2,8 @@ services:
   fastapi:
     build: .
     container_name: machineguard-api
+    networks:
+      - machineguard-network
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8080:8000"
@@ -15,6 +17,8 @@ services:
   prefect:
     build: .
     container_name: machineguard-prefect
+    networks:
+      - machineguard-network
     command: python main_pipeline.py
     volumes:
       - ./:/app
@@ -22,6 +26,23 @@ services:
       - ./outputs:/app/outputs
     environment:
       - PYTHONUNBUFFERED=1
+      - PREFECT_API_URL=http://prefect:4200/api
       - PREFECT_API_DATABASE_CONNECTION_TIMEOUT=60
+      - PREFECT_API_REQUEST_TIMEOUT=60.0
     depends_on:
       - fastapi
+
+  streamlit:   # ✅ FIXED POSITION
+    build: .
+    container_name: machineguard-ui
+    command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    networks:
+      - machineguard-network
+    volumes:
+      - ./:/app
+
+networks:
+  machineguard-network:
+    driver: bridge

@@ -7,20 +7,21 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Tuple
+import os
+
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 import numpy as np
 import pandas as pd
 import joblib
 import json
-import os
 import logging
 from io import BytesIO
 from datetime import datetime
 from collections import deque
 import uvicorn
-
-from fastapi.middleware.cors import CORSMiddleware
-
-
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -53,6 +54,7 @@ app.add_middleware(
 # ── In-memory state ───────────────────────────────────────────────────────────
 MODEL_VERSION = "1.0.0"
 FAILURE_THRESHOLD = 0.3          # probability threshold to run regression
+MAX_TOOL_WEAR_MINUTES = 253.0    # max observed wear in the cleaned training data
 feedback_buffer: List[Dict] = []
 prediction_log: deque = deque(maxlen=1000)   # last 1000 predictions for drift
 
@@ -62,6 +64,22 @@ FAILURE_LABELS = {0: "No Failure", 1: "TWF", 2: "HDF", 3: "PWF", 4: "OSF", 5: "R
 # ── Model loading ─────────────────────────────────────────────────────────────
 MODELS: Dict[str, Any] = {}
 
+def _load_model_artefact(name: str, path: str) -> Any:
+    """Load pickle, project JSON, or native XGBoost JSON artefacts."""
+    if name == "xgb_reg" and path.endswith(".json"):
+        import xgboost as xgb
+
+        model = xgb.XGBRegressor()
+        model.load_model(path)
+        return model
+
+    if path.endswith(".json"):
+        with open(path) as f:
+            return json.load(f)
+
+    return joblib.load(path)
+
+
 def load_models():
     """Load all saved model artefacts. Gracefully skip if not found (dev mode)."""
     artefacts = {
@@ -69,19 +87,15 @@ def load_models():
         "kmeans": ["models/kmeans.pkl"],
         "xgb_clf": ["models/xgb_classifier.pkl"],
         "svm_clf": ["models/svm_classifier.pkl", "models/svm_pipeline.pkl"],
-        "xgb_reg": ["models/xgb_regressor.pkl", "models/tool_wear_regressor.pkl"],
+        "xgb_reg": ["models/tool_wear_regressor.pkl", "models/xgb_regressor.pkl", "models/xgb_regressor.json"],
         "scaler": ["models/scaler.pkl"],
         "rules": ["models/rules.json", "models/association_rules.json"],
     }
     for name, candidates in artefacts.items():
         path = next((p for p in candidates if os.path.exists(p)), None)
         if path:
-            if path.endswith(".json"):
-                with open(path) as f:
-                    MODELS[name] = json.load(f)
-            else:
-                MODELS[name] = joblib.load(path)
-            logger.info(f"Loaded artefact: {name}")
+            MODELS[name] = _load_model_artefact(name, path)
+            logger.info(f"Loaded artefact: {name} from {path}")
         else:
             logger.warning(f"Artefact not found (dev mode): {candidates}")
 
@@ -253,6 +267,27 @@ def _safe_regressor_predict(model: Any, model_input: pd.DataFrame) -> np.ndarray
     return model.predict(model_input)
 
 
+def _build_regression_feature_frame(features: np.ndarray, cluster: int, pca_features: np.ndarray) -> pd.DataFrame:
+    """Build the feature shape used by the tool-wear regression artefacts."""
+    temp_diff = float(features[0, 6])
+    base = {
+        "air_temperature": float(features[0, 0]),
+        "process_temperature": float(features[0, 1]),
+        "rotational_speed": float(features[0, 2]),
+        "torque": float(features[0, 3]),
+        "Torque_roll10": float(features[0, 3]),
+        "Process_Temp_roll10": float(features[0, 1]),
+        "temp_diff_new": temp_diff,
+        "temp_diff_cum": temp_diff,
+        "type_enc": float(features[0, 5]),
+        "health_regime_enc": float(cluster),
+        "PC1": float(pca_features[0, 0]) if pca_features.shape[1] > 0 else 0.0,
+        "PC2": float(pca_features[0, 1]) if pca_features.shape[1] > 1 else 0.0,
+        "PC3": float(pca_features[0, 2]) if pca_features.shape[1] > 2 else 0.0,
+    }
+    return pd.DataFrame([base])
+
+
 def predict_failure(features: np.ndarray, cluster: int, pca_features: np.ndarray) -> tuple:
     """Return (failure_probability, failure_type_label)."""
     if "xgb_clf" not in MODELS:
@@ -272,7 +307,7 @@ def predict_failure(features: np.ndarray, cluster: int, pca_features: np.ndarray
     return fail_prob, FAILURE_LABELS.get(pred_class, "Unknown")
 
 
-def estimate_tool_wear(features: np.ndarray, fail_prob: float) -> Optional[float]:
+def estimate_tool_wear(features: np.ndarray, fail_prob: float, cluster: int, pca_features: np.ndarray) -> Optional[float]:
     """Return predicted tool wear, or None if below threshold."""
     if fail_prob < FAILURE_THRESHOLD:
         return None
@@ -282,20 +317,17 @@ def estimate_tool_wear(features: np.ndarray, fail_prob: float) -> Optional[float
         pred = max(0.0, min(300.0, features[0, 4] + wear_delta))
         return round(float(pred), 1)
     reg_model = MODELS["xgb_reg"]
-    reg_frame = pd.DataFrame([{
-        "air_temperature": float(features[0, 0]),
-        "process_temperature": float(features[0, 1]),
-        "rotational_speed": float(features[0, 2]),
-        "torque": float(features[0, 3]),
-        "type_enc": float(features[0, 5]),
-        "temp_diff": float(features[0, 6]),
-        "power_w": float(features[0, 7]),
-        "torque_speed_ratio": float(features[0, 9]),
-    }])
+    reg_frame = _build_regression_feature_frame(features, cluster, pca_features)
     expected_cols = getattr(reg_model, "feature_names_in_", None)
     if expected_cols is not None:
         reg_frame = reg_frame.reindex(columns=list(expected_cols), fill_value=0.0)
+    elif hasattr(reg_model, "get_booster"):
+        expected_count = reg_model.get_booster().num_features()
+        if expected_count != reg_frame.shape[1]:
+            reg_frame = reg_frame.iloc[:, :expected_count]
     pred_wear = float(_safe_regressor_predict(reg_model, reg_frame)[0])
+    if 0.0 <= pred_wear <= 1.0:
+        pred_wear *= MAX_TOOL_WEAR_MINUTES
     return round(max(0.0, pred_wear), 1)
 
 
@@ -360,7 +392,7 @@ def _predict_core(sensor: SensorInput) -> Tuple[float, str, str, Optional[float]
     pca_features = apply_pca(features)
     cluster, health_regime = assign_cluster(pca_features)
     fail_prob, failure_type = predict_failure(features, cluster, pca_features)
-    predicted_tool_wear = estimate_tool_wear(features, fail_prob)
+    predicted_tool_wear = estimate_tool_wear(features, fail_prob, cluster, pca_features)
     urgency_level = get_urgency_level(predicted_tool_wear)
     triggered_rules = match_rules(cluster, failure_type)
     recs = get_recommendations(failure_type, sensor.machine_age_bin or "Medium")
