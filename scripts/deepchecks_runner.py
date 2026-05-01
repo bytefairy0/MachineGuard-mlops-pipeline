@@ -7,21 +7,8 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "cleaned_data" / "clustered_data.csv"
+MODEL_PATH = ROOT / "models" / "xgb_classifier.pkl"
 OUTPUTS_PATH = ROOT / "outputs" / "deepchecks_report.json"
-
-
-def _resolve_classifier_model_path() -> Path | None:
-    candidates = [
-        "xgb_classifier.pkl",
-        "xgb_isFailure.pkl",
-        "svm_classifier.pkl",
-        "svm_isFailure.pkl",
-    ]
-    for name in candidates:
-        path = ROOT / "models" / name
-        if path.exists():
-            return path
-    return None
 
 
 class _DeepchecksCompatibleModel:
@@ -84,9 +71,8 @@ def run_deepchecks() -> Dict[str, Any]:
 
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Missing dataset: {DATA_PATH}")
-    model_path = _resolve_classifier_model_path()
-    if model_path is None:
-        raise FileNotFoundError("Missing classifier model in models/ directory.")
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Missing classifier model: {MODEL_PATH}")
 
     df = pd.read_csv(DATA_PATH)
     features = [
@@ -109,7 +95,7 @@ def run_deepchecks() -> Dict[str, Any]:
     y = df["machine_failure"].astype(int)
     X = df[features].copy()
 
-    model = joblib.load(model_path)
+    model = joblib.load(MODEL_PATH)
     expected_cols = getattr(model, "feature_names_in_", None)
     if expected_cols is not None:
         lower_map = {c.lower(): c for c in X.columns}
