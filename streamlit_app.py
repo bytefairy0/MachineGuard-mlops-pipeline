@@ -1,4 +1,10 @@
 from pathlib import Path
+import os
+import smtplib
+import ssl
+import traceback
+from email.message import EmailMessage
+from typing import Optional
 
 import altair as alt
 import pandas as pd
@@ -48,6 +54,36 @@ with status_col:
 
 ROOT_DIR = Path(__file__).resolve().parent
 
+EMAIL_SECRET_KEYS = {
+    "smtp_host": ("smtp_host", "SMTP_HOST"),
+    "smtp_port": ("smtp_port", "SMTP_PORT"),
+    "smtp_username": ("smtp_username", "SMTP_USERNAME"),
+    "smtp_password": ("smtp_password", "SMTP_PASSWORD"),
+    "smtp_sender": ("smtp_sender", "SMTP_SENDER"),
+    "smtp_use_tls": ("smtp_use_tls", "SMTP_USE_TLS"),
+    "smtp_use_ssl": ("smtp_use_ssl", "SMTP_USE_SSL"),
+    "notification_recipient": ("notification_recipient", "NOTIFICATION_RECIPIENT"),
+}
+
+
+def load_dotenv_file() -> None:
+    env_path = ROOT_DIR / ".env"
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        clean_line = line.strip()
+        if not clean_line or clean_line.startswith("#") or "=" not in clean_line:
+            continue
+        key, value = clean_line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+load_dotenv_file()
+
 RISK_PRESETS = {
     "Normal operation": {
         "machine_id": "M001",
@@ -85,6 +121,94 @@ if "selected_preset" not in st.session_state:
     st.session_state.selected_preset = "Normal operation"
 if "prediction_history" not in st.session_state:
     st.session_state.prediction_history = []
+
+
+def get_email_setting(name: str, default: Optional[str] = None) -> Optional[str]:
+    secret_key, env_key = EMAIL_SECRET_KEYS[name]
+    env_value = os.getenv(env_key)
+    if env_value:
+        return env_value
+
+    try:
+        email_secrets = st.secrets.get("email", {})
+        if secret_key in email_secrets:
+            return str(email_secrets[secret_key])
+        if secret_key in st.secrets:
+            return str(st.secrets[secret_key])
+    except Exception:
+        return default
+    return default
+
+
+def parse_bool(value: object, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def send_email_notification(subject: str, body: str, recipient: str) -> tuple[bool, str]:
+    smtp_host = get_email_setting("smtp_host")
+    smtp_port = int(get_email_setting("smtp_port", "587") or "587")
+    smtp_username = get_email_setting("smtp_username")
+    smtp_password = get_email_setting("smtp_password")
+    smtp_sender = get_email_setting("smtp_sender") or smtp_username
+    use_tls = parse_bool(get_email_setting("smtp_use_tls"), default=True)
+    use_ssl = parse_bool(get_email_setting("smtp_use_ssl"), default=False)
+
+    if not recipient:
+        return False, "Email recipient is empty."
+    if not smtp_host or not smtp_sender:
+        return False, "SMTP host and sender are not configured."
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = smtp_sender
+    message["To"] = recipient
+    message.set_content(body)
+
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl.create_default_context(), timeout=15) as server:
+                if smtp_username and smtp_password:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                if use_tls:
+                    server.starttls(context=ssl.create_default_context())
+                if smtp_username and smtp_password:
+                    server.login(smtp_username, smtp_password)
+                server.send_message(message)
+    except Exception as exc:
+        return False, f"Email notification failed: {exc}"
+    return True, "Email notification sent."
+
+
+def notify_streamlit_run(
+    *,
+    enabled: bool,
+    recipient: str,
+    run_name: str,
+    status: str,
+    details: str,
+) -> None:
+    if not enabled:
+        return
+
+    subject = f"MachineGuard+ {run_name} {status}"
+    body = (
+        f"MachineGuard+ Streamlit notification\n\n"
+        f"Run: {run_name}\n"
+        f"Status: {status}\n\n"
+        f"{details}"
+    )
+    sent, message = send_email_notification(subject, body, recipient.strip())
+    if sent:
+        st.toast(message)
+    else:
+        st.warning(message)
 
 
 @st.cache_data(show_spinner=False)
@@ -202,6 +326,19 @@ with st.sidebar:
         for artefact_name in sorted(MODELS.keys()):
             st.write(f"- {artefact_name}")
 
+    with st.expander("Email notifications", expanded=False):
+        email_notifications_enabled = st.checkbox(
+            "Send email after Streamlit runs",
+            value=False,
+            help="Sends a best-effort success/failure email after live prediction or batch trend processing.",
+        )
+        email_recipient = st.text_input(
+            "Recipient email",
+            value=get_email_setting("notification_recipient", "") or "",
+            placeholder="maintenance-team@example.com",
+        )
+        st.caption("Configure SMTP with Streamlit secrets or environment variables.")
+
 tabs = st.tabs(["Live Prediction", "Batch Trend", "Visual Gallery", "Project Flow"])
 
 with tabs[0]:
@@ -294,8 +431,30 @@ with tabs[0]:
                         render_recommendation(rec, idx)
                 else:
                     st.write("No recommendations found.")
+
+            notify_streamlit_run(
+                enabled=email_notifications_enabled,
+                recipient=email_recipient,
+                run_name="Live Prediction",
+                status="success",
+                details=(
+                    f"Machine ID: {result['machine_id']}\n"
+                    f"Failure probability: {result['failure_probability']:.2%}\n"
+                    f"Failure type: {result['failure_type']}\n"
+                    f"Health regime: {result['health_regime']}\n"
+                    f"Urgency: {result['urgency_level'] or 'N/A'}\n"
+                    f"Recommendations: {len(result['recommendations'])}"
+                ),
+            )
         except Exception as exc:  # pragma: no cover
             st.error(f"Prediction failed: {exc}")
+            notify_streamlit_run(
+                enabled=email_notifications_enabled,
+                recipient=email_recipient,
+                run_name="Live Prediction",
+                status="failure",
+                details=f"Error: {exc}\n\nTraceback:\n{traceback.format_exc()}",
+            )
 
     st.markdown("### Recent Predictions")
     if st.session_state.prediction_history:
@@ -357,8 +516,22 @@ with tabs[1]:
             missing = [c for c in required if c not in ts_df.columns]
             if missing:
                 st.error(f"Missing required columns: {missing}")
+                notify_streamlit_run(
+                    enabled=email_notifications_enabled,
+                    recipient=email_recipient,
+                    run_name="Batch Trend",
+                    status="failure",
+                    details=f"Missing required columns: {missing}",
+                )
             elif ts_df.empty:
                 st.error("CSV has no rows.")
+                notify_streamlit_run(
+                    enabled=email_notifications_enabled,
+                    recipient=email_recipient,
+                    run_name="Batch Trend",
+                    status="failure",
+                    details="CSV has no rows.",
+                )
             else:
                 row_results = []
                 for _, row in ts_df.iterrows():
@@ -395,8 +568,29 @@ with tabs[1]:
                 st.line_chart(plot_df.set_index("step")[["failure_probability"]], height=220)
                 st.line_chart(plot_df.set_index("step")[["observed_tool_wear", "predicted_tool_wear"]], height=260)
                 st.dataframe(results_df, use_container_width=True)
+                notify_streamlit_run(
+                    enabled=email_notifications_enabled,
+                    recipient=email_recipient,
+                    run_name="Batch Trend",
+                    status="success",
+                    details=(
+                        f"Rows processed: {len(results_df)}\n"
+                        f"Final machine ID: {final['machine_id']}\n"
+                        f"Final failure probability: {float(final['failure_probability']):.2%}\n"
+                        f"Final failure type: {final['failure_type']}\n"
+                        f"Final health regime: {final['health_regime']}\n"
+                        f"Final urgency: {final['urgency_level'] or 'N/A'}"
+                    ),
+                )
         except Exception as exc:  # pragma: no cover
             st.error(f"Time series processing failed: {exc}")
+            notify_streamlit_run(
+                enabled=email_notifications_enabled,
+                recipient=email_recipient,
+                run_name="Batch Trend",
+                status="failure",
+                details=f"Error: {exc}\n\nTraceback:\n{traceback.format_exc()}",
+            )
 
 with tabs[2]:
     st.markdown("### Saved Visualizations Gallery")

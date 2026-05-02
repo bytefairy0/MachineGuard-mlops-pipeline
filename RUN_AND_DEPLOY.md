@@ -43,6 +43,43 @@ Open:
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health: `http://127.0.0.1:8000/health`
 
+## 3.1) Run Streamlit With Email Notifications
+
+Full setup guide:
+
+- `EMAIL_NOTIFICATIONS_SETUP.md`
+
+Start Streamlit:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The sidebar has an **Email notifications** section. Enable it and enter a recipient to send success/failure notifications after live prediction or batch trend runs.
+
+Configure SMTP through environment variables:
+
+```bash
+export SMTP_HOST="smtp.gmail.com"
+export SMTP_PORT="587"
+export SMTP_USERNAME="your_email@example.com"
+export SMTP_PASSWORD="your_app_password"
+export SMTP_SENDER="your_email@example.com"
+export NOTIFICATION_RECIPIENT="maintenance-team@example.com"
+```
+
+Or use `.streamlit/secrets.toml` locally:
+
+```toml
+[email]
+smtp_host = "smtp.gmail.com"
+smtp_port = "587"
+smtp_username = "your_email@example.com"
+smtp_password = "your_app_password"
+smtp_sender = "your_email@example.com"
+notification_recipient = "maintenance-team@example.com"
+```
+
 ## 4) Core API Endpoints
 
 - `POST /predict`
