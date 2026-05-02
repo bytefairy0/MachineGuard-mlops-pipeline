@@ -19,3 +19,11 @@ __pycache__/
 .venv/
 venv/
 env/
+
+EMAIL_NOTIFICATIONS_SETUP.md
+PROJECT_LEARNING_GUIDE.md
+MACHINEGUARD_PROJECT_INFO.md
+Project_status.md
+RUN_AND_DEPLOY.md
+
+.codex
